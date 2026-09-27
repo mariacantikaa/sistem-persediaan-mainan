@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Sistem Akuntansi Persediaan Toko Mainan
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="../css/style.css"
+    >
+
+</head>
+
+
+<body>
+
+    <!-- =====================================================
+     SIDEBAR
+     ===================================================== -->
+
+<aside class="sidebar">
+
+    <div class="logo">
+
+        <div class="logo-icon">
+            🧸
+        </div>
+
+        <div>
+
+            <h2>
+                Toko Mainan
+            </h2>
+
+            <p>
+                Sistem Akuntansi
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         MENU UTAMA
+         ===================================================== -->
+
+    <div class="menu-title">
+        MENU UTAMA
+    </div>
+
+
+    <button
+        class="menu-button active"
+        onclick="dashboard()"
+    >
+
+        🏠
+
+        <span>
+            Dashboard
+        </span>
+
+    </button>
+
+
+    <!-- =====================================================
+         DATA MASTER
+         ===================================================== -->
+
+    <div class="menu-section">
+        DATA MASTER
+    </div>
+
+
+    <button
+        class="menu-button"
+        onclick="dataBarang()"
+    >
+
+        📦
+
+        <span>
+            Data Barang
+        </span>
+
+    </button>
+
+
+    <button
+        class="menu-button"
+        onclick="dataPemasok()"
+    >
+
+        🏢
+
+        <span>
+            Data Pemasok
+        </span>
+
+    </button>
+
+
+    <button
+        class="menu-button"
+        onclick="dataPelanggan()"
+    >
+
+        👤
+
+        <span>
+            Data Pelanggan
+        </span>
+
+    </button>
+
+
+    <!-- =====================================================
+         TRANSAKSI
+         ===================================================== -->
+
+    <div class="menu-section">
+        TRANSAKSI
+    </div>
+
+
+    <button
+        class="menu-button"
+        onclick="pembelian()"
+    >
+
+        🛒
+
+        <span>
+            Pembelian
+        </span>
+
+    </button>
+
+
+    <button
+        class="menu-button"
+        onclick="penjualan()"
+    >
+
+        💰
+
+        <span>
+            Penjualan
+        </span>
+
+    </button>
+
+
+    <button
+        class="menu-button"
+        onclick="penyesuaianStok()"
+    >
+
+        🔄
+
+        <span>
+            Penyesuaian Stok
+        </span>
+
+    </button>
+
+
+    <!-- =====================================================
+         AKUNTANSI
+         ===================================================== -->
+
+    <div class="menu-section">
+        AKUNTANSI
+    </div>
+
+
+    <button
+        class="menu-button"
+        onclick="jurnalUmum()"
+    >
+
+        📒
+
+        <span>
+            Jurnal Umum
+        </span>
+
+    </button>
+
+
+    <button
+        class="menu-button"
+        onclick="bukuBesar()"
+    >
+
+        📕
+
+        <span>
+            Buku Besar
+        </span>
+
+    </button>
+
+
+    <!-- =====================================================
+         LAPORAN
+         ===================================================== -->
+
+    <div class="menu-section">
+        LAPORAN
+    </div>
+
+
+    <button
+        class="menu-button"
+        onclick="laporanStok()"
+    >
+
+        📊
+
+        <span>
+            Laporan Stok
+        </span>
+
+    </button>
+
+
+    <button
+        class="menu-button"
+        onclick="laporanPembelian()"
+    >
+
+        📋
+
+        <span>
+            Laporan Pembelian
+        </span>
+
+    </button>
+
+
+    <button
+        class="menu-button"
+        onclick="laporanPenjualan()"
+    >
+
+        🧾
+
+        <span>
+            Laporan Penjualan
+        </span>
+
+    </button>
+
+
+    <button
+        class="menu-button"
+        onclick="kartuPersediaan()"
+    >
+
+        📑
+
+        <span>
+            Kartu Persediaan
+        </span>
+
+    </button>
+
+
+    <button
+        class="menu-button"
+        onclick="laporanLabaRugi()"
+    >
+
+        📈
+
+        <span>
+            Laporan Laba Rugi
+        </span>
+
+    </button>
+
+
+    <button
+        class="menu-button"
+        onclick="neraca()"
+    >
+
+        ⚖️
+
+        <span>
+            Neraca
+        </span>
+
+    </button>
+
+
+    <!-- =====================================================
+         PENGATURAN
+         ===================================================== -->
+
+    <div class="sidebar-bottom">
+
+        <button
+            class="menu-button"
+            onclick="pengaturan()"
+        >
+
+            ⚙️
+
+            <span>
+                Pengaturan
+            </span>
+
+        </button>
+
+    </div>
+
+</aside>
+
+    <!-- =====================================================
+         KONTEN UTAMA
+         ===================================================== -->
+
+    <main class="main-content">
+
+
+        <!-- HEADER -->
+
+        <header class="top-header">
+
+            <div>
+
+                <p class="header-small">
+                    SISTEM AKUNTANSI PERSEDIAAN
+                </p>
+
+
+                <h1 id="judulHalaman">
+                    Dashboard
+                </h1>
+
+            </div>
+
+
+            <div class="header-date">
+
+                📅
+
+                <span id="tanggalHariIni">
+                </span>
+
+            </div>
+
+        </header>
+
+
+
+        <!-- ISI APLIKASI -->
+
+        <section id="isi">
+        </section>
+
+
+    </main>
+
+
+
+    <!-- =====================================================
+         SUPABASE
+         ===================================================== -->
+
+    <script
+        src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+    ></script>
+
+
+
+    <!-- =====================================================
+         JAVASCRIPT APLIKASI
+         ===================================================== -->
+
+    <script
+        src="../js/config.js"
+    ></script>
+
+
+    <script
+        src="../js/app.js"
+    ></script>
+
+
+
+    <!-- =====================================================
+         TANGGAL HARI INI
+         ===================================================== -->
+
+    <script>
+
+        document.getElementById(
+            "tanggalHariIni"
+        ).textContent =
+            tanggalHariIni();
+
+    </script>
+
+
+</body>
+
+</html>
