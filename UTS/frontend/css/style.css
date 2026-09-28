@@ -4758,3 +4758,16 @@ body.theme-dark .neraca-total-row strong,
 body.theme-dark .neraca-total-akhir strong {
     color: #222222 !important;
 }
+
+/* =====================================================
+   COPYRIGHT SIDEBAR
+   ===================================================== */
+
+.copyright {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.45);
+    text-align: center;
+    margin-top: 10px;
+    padding: 5px 0;
+    font-weight: 400;
+}

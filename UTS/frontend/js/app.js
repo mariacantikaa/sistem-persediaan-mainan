@@ -1016,9 +1016,12 @@ async function dashboard() {
 
                 </div>
 
-                <div id="dashboardStokAlert">
-                    Memuat data...
-                </div>
+               <div
+    id="dashboardStokAlert"
+    style="max-height: 260px; overflow-y: auto; padding-right: 8px;"
+>
+    Memuat data...
+</div>
 
             </div>
 
@@ -1041,15 +1044,17 @@ async function dashboard() {
 
                 </div>
 
-                <div id="dashboardKategori">
-                    Memuat data...
-                </div>
+                <div
+    id="dashboardKategori"
+    style="max-height: 260px; overflow-y: auto; padding-right: 8px;"
+>
+    Memuat data...
+</div>
 
             </div>
 
         </div>
-
-
+    
         <!-- =========================================
              BARANG TERBANYAK
         ========================================== -->
@@ -1072,9 +1077,12 @@ async function dashboard() {
 
             </div>
 
-            <div id="dashboardBarangTerbanyak">
-                Memuat data...
-            </div>
+          <div
+    id="dashboardBarangTerbanyak"
+    style="max-height: 260px; overflow-y: auto; padding-right: 8px;"
+>
+    Memuat data...
+</div>
 
         </div>
 
@@ -2437,9 +2445,13 @@ async function muatKategoriBarang() {
 // TAMPILKAN BARANG
 // =====================================================
 
+let halamanBarang = 1;
+const dataPerHalamanBarang = 10;
+
 async function tampilkanBarang(
     query = "",
-    kategori = ""
+    kategori = "",
+    halaman = 1
 ) {
 
     const container =
@@ -2447,15 +2459,12 @@ async function tampilkanBarang(
             "tabelBarang"
         );
 
-
     if (!container) {
         return;
     }
 
-
     if (
-        typeof supabaseClient ===
-        "undefined" ||
+        typeof supabaseClient === "undefined" ||
         !supabaseClient
     ) {
 
@@ -2470,8 +2479,14 @@ async function tampilkanBarang(
         `;
 
         return;
-
     }
+
+
+    // =====================================================
+    // SIMPAN HALAMAN AKTIF
+    // =====================================================
+
+    halamanBarang = halaman;
 
 
     const safeQuery =
@@ -2483,7 +2498,12 @@ async function tampilkanBarang(
     let request =
         supabaseClient
             .from("barang")
-            .select("*");
+            .select(
+                "*",
+                {
+                    count: "exact"
+                }
+            );
 
 
     // =====================================================
@@ -2494,7 +2514,6 @@ async function tampilkanBarang(
 
         const pattern =
             `%${safeQuery}%`;
-
 
         request =
             request.or(
@@ -2519,9 +2538,24 @@ async function tampilkanBarang(
     }
 
 
+    // =====================================================
+    // PAGINATION
+    // =====================================================
+
+    const mulai =
+        (halaman - 1) *
+        dataPerHalamanBarang;
+
+    const selesai =
+        mulai +
+        dataPerHalamanBarang -
+        1;
+
+
     const {
         data,
-        error
+        error,
+        count
     } =
         await request
             .order(
@@ -2529,6 +2563,10 @@ async function tampilkanBarang(
                 {
                     ascending: true
                 }
+            )
+            .range(
+                mulai,
+                selesai
             );
 
 
@@ -2557,7 +2595,6 @@ async function tampilkanBarang(
         `;
 
         return;
-
     }
 
 
@@ -2572,7 +2609,6 @@ async function tampilkanBarang(
 
         let pesanJudul =
             "Belum Ada Data Barang";
-
 
         let pesanIsi =
             "Silakan tambahkan barang terlebih dahulu.";
@@ -2619,7 +2655,6 @@ async function tampilkanBarang(
         `;
 
         return;
-
     }
 
 
@@ -2696,9 +2731,6 @@ async function tampilkanBarang(
             index
         ) {
 
-            // Jika status belum ada,
-            // anggap barang sebagai AKTIF
-
             const status =
                 String(
                     item.status || "AKTIF"
@@ -2709,12 +2741,18 @@ async function tampilkanBarang(
                 status === "AKTIF";
 
 
+            const nomor =
+                mulai +
+                index +
+                1;
+
+
             html += `
 
                 <tr>
 
                     <td>
-                        ${index + 1}
+                        ${nomor}
                     </td>
 
                     <td>
@@ -2766,11 +2804,13 @@ async function tampilkanBarang(
                                     : "stok-habis"
                             }"
                         >
+
                             ${
                                 statusAktif
                                     ? "AKTIF"
                                     : "NONAKTIF"
                             }
+
                         </span>
 
                     </td>
@@ -2800,15 +2840,21 @@ async function tampilkanBarang(
                             onclick="
                                 ubahStatusBarang(
                                     ${item.id_barang},
-                                    '${statusAktif ? "NONAKTIF" : "AKTIF"}'
+                                    '${
+                                        statusAktif
+                                            ? "NONAKTIF"
+                                            : "AKTIF"
+                                    }'
                                 )
                             "
                         >
+
                             ${
                                 statusAktif
                                     ? "Nonaktifkan"
                                     : "Aktifkan"
                             }
+
                         </button>
 
                     </td>
@@ -2834,6 +2880,106 @@ async function tampilkanBarang(
         </div>
 
     `;
+
+
+    // =====================================================
+    // PAGINATION
+    // =====================================================
+
+    const totalData =
+        count || 0;
+
+
+    const totalHalaman =
+        Math.ceil(
+            totalData /
+            dataPerHalamanBarang
+        );
+
+
+    if (totalHalaman > 1) {
+
+        html += `
+
+            <div
+                style="
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    gap: 12px;
+                    margin-top: 20px;
+                    flex-wrap: wrap;
+                "
+            >
+
+                <button
+                    type="button"
+                    class="btn-secondary"
+                    ${
+                        halaman <= 1
+                            ? "disabled"
+                            : ""
+                    }
+                    onclick="
+                        tampilkanBarang(
+                            '${safeQuery.replace(
+                                /'/g,
+                                "\\'"
+                            )}',
+                            '${kategori.replace(
+                                /'/g,
+                                "\\'"
+                            )}',
+                            ${halaman - 1}
+                        )
+                    "
+                >
+                    ← Sebelumnya
+                </button>
+
+
+                <span
+                    style="
+                        font-weight: 600;
+                    "
+                >
+                    Halaman
+                    ${halaman}
+                    dari
+                    ${totalHalaman}
+                </span>
+
+
+                <button
+                    type="button"
+                    class="btn-secondary"
+                    ${
+                        halaman >= totalHalaman
+                            ? "disabled"
+                            : ""
+                    }
+                    onclick="
+                        tampilkanBarang(
+                            '${safeQuery.replace(
+                                /'/g,
+                                "\\'"
+                            )}',
+                            '${kategori.replace(
+                                /'/g,
+                                "\\'"
+                            )}',
+                            ${halaman + 1}
+                        )
+                    "
+                >
+                    Berikutnya →
+                </button>
+
+            </div>
+
+        `;
+
+    }
 
 
     // =====================================================
@@ -2899,20 +3045,23 @@ async function ubahStatusBarang(
     // UPDATE STATUS DI SUPABASE
     // =====================================================
 
-    const {
-        error
-    } =
-        await supabaseClient
-            .from("barang")
-            .update({
-                status:
-                    statusBaru
-            })
-            .eq(
-                "id_barang",
-                id
-            );
-
+   const {
+    data: dataUpdate,
+    error
+} =
+    await supabaseClient
+        .from("barang")
+        .update({
+            status: statusBaru
+        })
+        .eq(
+            "id_barang",
+            id
+        )
+        .select(
+            "id_barang, status"
+        )
+        .single();
 
     // =====================================================
     // CEK ERROR
@@ -2962,6 +3111,65 @@ async function ubahStatusBarang(
 
 }
 
+// =====================================================
+// GENERATE KODE BARANG OTOMATIS
+// =====================================================
+
+async function generateKodeBarang() {
+
+    const {
+        data,
+        error
+    } = await supabaseClient
+        .from("barang")
+        .select("kode_barang")
+        .order("id_barang", {
+            ascending: false
+        })
+        .limit(1);
+
+    if (error) {
+
+        console.error(
+            "Gagal mengambil kode barang terakhir:",
+            error
+        );
+
+        return "BRG001";
+    }
+
+    if (
+        !data ||
+        data.length === 0 ||
+        !data[0].kode_barang
+    ) {
+
+        return "BRG001";
+    }
+
+    const kodeTerakhir =
+        data[0].kode_barang;
+
+    const nomorTerakhir =
+        parseInt(
+            kodeTerakhir.replace(
+                "BRG",
+                ""
+            ),
+            10
+        );
+
+    const nomorBaru =
+        (nomorTerakhir || 0) + 1;
+
+    return (
+        "BRG" +
+        String(nomorBaru).padStart(
+            3,
+            "0"
+        )
+    );
+} 
 
 // =====================================================
 // TAMBAH BARANG
@@ -2977,7 +3185,6 @@ function tambahBarang() {
     aktifkanMenu(
         "Data Barang"
     );
-
 
     document.getElementById(
         "isi"
@@ -3015,12 +3222,13 @@ function tambahBarang() {
                             Kode Barang
                         </label>
 
-                        <input
-                            type="text"
-                            id="kodeBarang"
-                            placeholder="Contoh: BRG004"
-                            required
-                        >
+<input 
+    type="text" 
+    id="kodeBarang" 
+    placeholder="Membuat kode otomatis..."
+    readonly
+    required
+>
 
                     </div>
 
@@ -3168,6 +3376,26 @@ function tambahBarang() {
         </div>
 
     `;
+        generateKodeBarang()
+        .then(function(kode) {
+
+            document.getElementById(
+                "kodeBarang"
+            ).value = kode;
+
+        })
+        .catch(function(error) {
+
+            console.error(
+                "Gagal membuat kode barang:",
+                error
+            );
+
+            document.getElementById(
+                "kodeBarang"
+            ).value = "BRG001";
+
+        });
 
 }
 
@@ -3179,7 +3407,6 @@ async function simpanBarang(event) {
 
     event.preventDefault();
 
-
     // =============================================
     // CEK SUPABASE
     // =============================================
@@ -3187,7 +3414,6 @@ async function simpanBarang(event) {
     if (!cekSupabase()) {
         return;
     }
-
 
     // =============================================
     // AMBIL NILAI FORM
@@ -3926,55 +4152,93 @@ async function dataPemasok() {
 
 }
 
-
 // =====================================================
 // TAMPILKAN PEMASOK
 // =====================================================
 
-async function tampilkanPemasok() {
+let halamanPemasok = 1;
+const dataPerHalamanPemasok = 10;
+
+async function tampilkanPemasok(
+    halaman = 1
+) {
 
     const container =
         document.getElementById(
             "tabelPemasok"
         );
 
-
     if (!container) {
         return;
     }
-
 
     if (!cekSupabase()) {
         return;
     }
 
+    halamanPemasok = halaman;
+
+    // =====================================================
+    // PAGINATION
+    // =====================================================
+
+    const mulai =
+        (halaman - 1) *
+        dataPerHalamanPemasok;
+
+    const selesai =
+        mulai +
+        dataPerHalamanPemasok -
+        1;
 
     const {
         data,
-        error
+        error,
+        count
     } =
         await supabaseClient
             .from("pemasok")
-            .select("*")
+            .select(
+                "*",
+                {
+                    count: "exact"
+                }
+            )
             .order(
-                "kode_pemasok"
+                "kode_pemasok",
+                {
+                    ascending: true
+                }
+            )
+            .range(
+                mulai,
+                selesai
             );
 
+    // =====================================================
+    // CEK ERROR
+    // =====================================================
 
     if (error) {
 
         container.innerHTML = `
 
             <div class="empty-state">
-                ${escapeHtml(error.message)}
+
+                ${escapeHtml(
+                    error.message
+                )}
+
             </div>
 
         `;
 
         return;
-
     }
 
+    // =====================================================
+    // DATA KOSONG
+    // =====================================================
 
     if (
         !data ||
@@ -3984,15 +4248,19 @@ async function tampilkanPemasok() {
         container.innerHTML = `
 
             <div class="empty-state">
+
                 Belum ada data pemasok.
+
             </div>
 
         `;
 
         return;
-
     }
 
+    // =====================================================
+    // TABEL PEMASOK
+    // =====================================================
 
     let html = `
 
@@ -4005,10 +4273,15 @@ async function tampilkanPemasok() {
                     <tr>
 
                         <th>No</th>
+
                         <th>Kode Pemasok</th>
+
                         <th>Nama Pemasok</th>
+
                         <th>Alamat</th>
+
                         <th>No. Telepon</th>
+                        <th>Aksi</th>
 
                     </tr>
 
@@ -4018,6 +4291,9 @@ async function tampilkanPemasok() {
 
     `;
 
+    // =====================================================
+    // TAMPILKAN SETIAP PEMASOK
+    // =====================================================
 
     data.forEach(
         function (
@@ -4025,12 +4301,17 @@ async function tampilkanPemasok() {
             index
         ) {
 
+            const nomor =
+                mulai +
+                index +
+                1;
+
             html += `
 
                 <tr>
 
                     <td>
-                        ${index + 1}
+                        ${nomor}
                     </td>
 
                     <td>
@@ -4056,7 +4337,19 @@ async function tampilkanPemasok() {
                             item.no_telepon || "-"
                         )}
                     </td>
-
+<td>
+    <button
+        type="button"
+        class="btn-primary"
+        onclick="
+            editPemasok(
+                ${item.id_pemasok}
+            )
+        "
+    >
+        ✏️ Edit
+    </button>
+</td>
                 </tr>
 
             `;
@@ -4064,6 +4357,9 @@ async function tampilkanPemasok() {
         }
     );
 
+    // =====================================================
+    // SELESAI MEMBUAT TABEL
+    // =====================================================
 
     html += `
 
@@ -4075,12 +4371,309 @@ async function tampilkanPemasok() {
 
     `;
 
+    // =====================================================
+    // PAGINATION
+    // =====================================================
+
+    const totalData =
+        count || 0;
+
+    const totalHalaman =
+        Math.ceil(
+            totalData /
+            dataPerHalamanPemasok
+        );
+
+    if (totalHalaman > 1) {
+
+        html += `
+
+            <div
+                style="
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    gap: 12px;
+                    margin-top: 20px;
+                    flex-wrap: wrap;
+                "
+            >
+
+                <button
+                    type="button"
+                    class="btn-secondary"
+                    ${
+                        halaman <= 1
+                            ? "disabled"
+                            : ""
+                    }
+                    onclick="
+                        tampilkanPemasok(
+                            ${halaman - 1}
+                        )
+                    "
+                >
+                    ← Sebelumnya
+                </button>
+
+                <span
+                    style="
+                        font-weight: 600;
+                    "
+                >
+                    Halaman
+                    ${halaman}
+                    dari
+                    ${totalHalaman}
+                </span>
+
+                <button
+                    type="button"
+                    class="btn-secondary"
+                    ${
+                        halaman >= totalHalaman
+                            ? "disabled"
+                            : ""
+                    }
+                    onclick="
+                        tampilkanPemasok(
+                            ${halaman + 1}
+                        )
+                    "
+                >
+                    Berikutnya →
+                </button>
+
+            </div>
+
+        `;
+
+    }
+
+    // =====================================================
+    // TAMPILKAN KE HALAMAN
+    // =====================================================
 
     container.innerHTML =
         html;
-
 }
 
+// =====================================================
+// EDIT PEMASOK
+// =====================================================
+
+async function editPemasok(idPemasok) {
+
+    const {
+        data,
+        error
+    } = await supabaseClient
+        .from("pemasok")
+        .select("*")
+        .eq(
+            "id_pemasok",
+            idPemasok
+        )
+        .single();
+
+    if (error) {
+
+        alert(
+            "Gagal mengambil data pemasok:\n\n" +
+            error.message
+        );
+
+        return;
+    }
+
+    document.getElementById(
+        "isi"
+    ).innerHTML = `
+
+        <div class="content-box">
+
+            <div class="page-header">
+
+                <div>
+
+                    <h2>
+                        Edit Pemasok
+                    </h2>
+
+                    <p>
+                        Ubah informasi pemasok.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <form
+                onsubmit="
+                    simpanEditPemasok(
+                        event,
+                        ${idPemasok}
+                    )
+                "
+            >
+
+                <div class="form-grid">
+
+
+                    <div class="form-group">
+
+                        <label>
+                            Kode Pemasok
+                        </label>
+
+                        <input
+                            type="text"
+                            id="editKodePemasok"
+                            value="${escapeHtml(
+                                data.kode_pemasok || ""
+                            )}"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            Nama Pemasok
+                        </label>
+
+                        <input
+                            type="text"
+                            id="editNamaPemasok"
+                            value="${escapeHtml(
+                                data.nama_pemasok || ""
+                            )}"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            Alamat
+                        </label>
+
+                        <input
+                            type="text"
+                            id="editAlamatPemasok"
+                            value="${escapeHtml(
+                                data.alamat || ""
+                            )}"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            No. Telepon
+                        </label>
+
+                        <input
+                            type="text"
+                            id="editTeleponPemasok"
+                            value="${escapeHtml(
+                                data.no_telepon || ""
+                            )}"
+                        >
+
+                    </div>
+
+
+                </div>
+
+
+                <div class="form-actions">
+
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        onclick="dataPemasok()"
+                    >
+                        Batal
+                    </button>
+
+
+                    <button
+                        type="submit"
+                        class="btn-primary"
+                    >
+                        💾 Simpan Perubahan
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    `;
+}
+
+// =====================================================
+// GENERATE KODE PEMASOK OTOMATIS
+// =====================================================
+
+async function generateKodePemasok() {
+
+    const {
+        data,
+        error
+    } = await supabaseClient
+        .from("pemasok")
+        .select("kode_pemasok")
+        .order("id_pemasok", {
+            ascending: false
+        })
+        .limit(1);
+
+    if (error) {
+
+        console.error(
+            "Gagal mengambil kode pemasok terakhir:",
+            error
+        );
+
+        return "SUP001";
+    }
+
+    if (
+        !data ||
+        data.length === 0 ||
+        !data[0].kode_pemasok
+    ) {
+
+        return "SUP001";
+    }
+
+    const kodeTerakhir =
+        data[0].kode_pemasok;
+
+    const nomorTerakhir =
+        parseInt(
+            kodeTerakhir.replace("SUP", ""),
+            10
+        );
+
+    const nomorBaru =
+        (nomorTerakhir || 0) + 1;
+
+    return (
+        "SUP" +
+        String(nomorBaru).padStart(3, "0")
+    );
+} 
 
 // =====================================================
 // TAMBAH PEMASOK
@@ -4136,7 +4729,8 @@ function tambahPemasok() {
                         <input
                             type="text"
                             id="kodePemasok"
-                            placeholder="Contoh: SUP002"
+                            placeholder="Membuat kode otomatis..."
+                            readonly
                             required
                         >
 
@@ -4216,8 +4810,45 @@ function tambahPemasok() {
 
     `;
 
-}
 
+    // MEMBUAT KODE PEMASOK OTOMATIS
+
+    generateKodePemasok()
+        .then(function(kode) {
+
+            const inputKode =
+                document.getElementById(
+                    "kodePemasok"
+                );
+
+            if (inputKode) {
+
+                inputKode.value = kode;
+
+            }
+
+        })
+        .catch(function(error) {
+
+            console.error(
+                "Gagal membuat kode pemasok:",
+                error
+            );
+
+            const inputKode =
+                document.getElementById(
+                    "kodePemasok"
+                );
+
+            if (inputKode) {
+
+                inputKode.value = "SUP001";
+
+            }
+
+        });
+
+}
 
 // =====================================================
 // SIMPAN PEMASOK
@@ -4286,6 +4917,98 @@ async function simpanPemasok(event) {
 
 }
 
+// =====================================================
+// SIMPAN EDIT PEMASOK
+// =====================================================
+
+async function simpanEditPemasok(
+    event,
+    idPemasok
+) {
+
+    event.preventDefault();
+
+    if (!cekSupabase()) {
+        return;
+    }
+
+    const kodePemasok =
+        document
+            .getElementById(
+                "editKodePemasok"
+            )
+            .value
+            .trim();
+
+    const namaPemasok =
+        document
+            .getElementById(
+                "editNamaPemasok"
+            )
+            .value
+            .trim();
+
+    const alamat =
+        document
+            .getElementById(
+                "editAlamatPemasok"
+            )
+            .value
+            .trim();
+
+    const noTelepon =
+        document
+            .getElementById(
+                "editTeleponPemasok"
+            )
+            .value
+            .trim();
+
+
+    const {
+        error
+    } =
+        await supabaseClient
+            .from("pemasok")
+            .update({
+
+                kode_pemasok:
+                    kodePemasok,
+
+                nama_pemasok:
+                    namaPemasok,
+
+                alamat:
+                    alamat,
+
+                no_telepon:
+                    noTelepon
+
+            })
+            .eq(
+                "id_pemasok",
+                idPemasok
+            );
+
+
+    if (error) {
+
+        alert(
+            "Gagal memperbarui pemasok:\n\n" +
+            error.message
+        );
+
+        return;
+    }
+
+
+    alert(
+        "Data pemasok berhasil diperbarui!"
+    );
+
+
+    await dataPemasok();
+}
 
 // =====================================================
 // DATA PELANGGAN
@@ -4352,55 +5075,97 @@ async function dataPelanggan() {
 
 }
 
-
 // =====================================================
 // TAMPILKAN PELANGGAN
 // =====================================================
 
-async function tampilkanPelanggan() {
+let halamanPelanggan = 1;
+const dataPerHalamanPelanggan = 10;
+
+async function tampilkanPelanggan(
+    halaman = 1
+) {
 
     const container =
         document.getElementById(
             "tabelPelanggan"
         );
 
-
     if (!container) {
         return;
     }
-
 
     if (!cekSupabase()) {
         return;
     }
 
+    halamanPelanggan = halaman;
+
+
+    // =====================================================
+    // PAGINATION
+    // =====================================================
+
+    const mulai =
+        (halaman - 1) *
+        dataPerHalamanPelanggan;
+
+    const selesai =
+        mulai +
+        dataPerHalamanPelanggan -
+        1;
+
 
     const {
         data,
-        error
+        error,
+        count
     } =
         await supabaseClient
             .from("pelanggan")
-            .select("*")
+            .select(
+                "*",
+                {
+                    count: "exact"
+                }
+            )
             .order(
-                "kode_pelanggan"
+                "kode_pelanggan",
+                {
+                    ascending: true
+                }
+            )
+            .range(
+                mulai,
+                selesai
             );
 
+
+    // =====================================================
+    // CEK ERROR
+    // =====================================================
 
     if (error) {
 
         container.innerHTML = `
 
             <div class="empty-state">
-                ${escapeHtml(error.message)}
+
+                ${escapeHtml(
+                    error.message
+                )}
+
             </div>
 
         `;
 
         return;
-
     }
 
+
+    // =====================================================
+    // DATA KOSONG
+    // =====================================================
 
     if (
         !data ||
@@ -4410,15 +5175,20 @@ async function tampilkanPelanggan() {
         container.innerHTML = `
 
             <div class="empty-state">
+
                 Belum ada data pelanggan.
+
             </div>
 
         `;
 
         return;
-
     }
 
+
+    // =====================================================
+    // TABEL PELANGGAN
+    // =====================================================
 
     let html = `
 
@@ -4431,10 +5201,16 @@ async function tampilkanPelanggan() {
                     <tr>
 
                         <th>No</th>
+
                         <th>Kode Pelanggan</th>
+
                         <th>Nama Pelanggan</th>
+
                         <th>Alamat</th>
+
                         <th>No. Telepon</th>
+
+                        <th>Aksi</th>
 
                     </tr>
 
@@ -4445,18 +5221,28 @@ async function tampilkanPelanggan() {
     `;
 
 
+    // =====================================================
+    // TAMPILKAN SETIAP PELANGGAN
+    // =====================================================
+
     data.forEach(
         function (
             item,
             index
         ) {
 
+            const nomor =
+                mulai +
+                index +
+                1;
+
+
             html += `
 
                 <tr>
 
                     <td>
-                        ${index + 1}
+                        ${nomor}
                     </td>
 
                     <td>
@@ -4483,6 +5269,22 @@ async function tampilkanPelanggan() {
                         )}
                     </td>
 
+                    <td>
+
+                        <button
+                            type="button"
+                            class="btn-primary"
+                            onclick="
+                                editPelanggan(
+                                    ${item.id_pelanggan}
+                                )
+                            "
+                        >
+                            ✏️ Edit
+                        </button>
+
+                    </td>
+
                 </tr>
 
             `;
@@ -4490,6 +5292,10 @@ async function tampilkanPelanggan() {
         }
     );
 
+
+    // =====================================================
+    // SELESAI MEMBUAT TABEL
+    // =====================================================
 
     html += `
 
@@ -4502,11 +5308,292 @@ async function tampilkanPelanggan() {
     `;
 
 
+    // =====================================================
+    // PAGINATION
+    // =====================================================
+
+    const totalData =
+        count || 0;
+
+
+    const totalHalaman =
+        Math.ceil(
+            totalData /
+            dataPerHalamanPelanggan
+        );
+
+
+    if (totalHalaman > 1) {
+
+        html += `
+
+            <div
+                style="
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    gap: 12px;
+                    margin-top: 20px;
+                    flex-wrap: wrap;
+                "
+            >
+
+                <button
+                    type="button"
+                    class="btn-secondary"
+                    ${
+                        halaman <= 1
+                            ? "disabled"
+                            : ""
+                    }
+                    onclick="
+                        tampilkanPelanggan(
+                            ${halaman - 1}
+                        )
+                    "
+                >
+                    ← Sebelumnya
+                </button>
+
+
+                <span
+                    style="
+                        font-weight: 600;
+                    "
+                >
+                    Halaman
+                    ${halaman}
+                    dari
+                    ${totalHalaman}
+                </span>
+
+
+                <button
+                    type="button"
+                    class="btn-secondary"
+                    ${
+                        halaman >= totalHalaman
+                            ? "disabled"
+                            : ""
+                    }
+                    onclick="
+                        tampilkanPelanggan(
+                            ${halaman + 1}
+                        )
+                    "
+                >
+                    Berikutnya →
+                </button>
+
+            </div>
+
+        `;
+
+    }
+
+
+    // =====================================================
+    // TAMPILKAN KE HALAMAN
+    // =====================================================
+
     container.innerHTML =
         html;
 
 }
 
+// =====================================================
+// EDIT PELANGGAN
+// =====================================================
+
+async function editPelanggan(idPelanggan) {
+
+    const { data, error } = await supabaseClient
+        .from("pelanggan")
+        .select("*")
+        .eq("id_pelanggan", idPelanggan)
+        .single();
+
+    if (error) {
+
+        alert(
+            "Gagal mengambil data pelanggan:\n\n" +
+            error.message
+        );
+
+        return;
+    }
+
+    document.getElementById("isi").innerHTML = `
+
+        <div class="content-box">
+
+            <div class="page-header">
+
+                <div>
+
+                    <h2>
+                        Edit Pelanggan
+                    </h2>
+
+                    <p>
+                        Ubah informasi pelanggan.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <form
+                onsubmit="simpanEditPelanggan(event, ${idPelanggan})"
+            >
+
+                <div class="form-grid">
+
+                    <div class="form-group">
+
+                        <label>
+                            Kode Pelanggan
+                        </label>
+
+                        <input
+                            type="text"
+                            id="editKodePelanggan"
+                            value="${escapeHtml(data.kode_pelanggan || "")}"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            Nama Pelanggan
+                        </label>
+
+                        <input
+                            type="text"
+                            id="editNamaPelanggan"
+                            value="${escapeHtml(data.nama_pelanggan || "")}"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            Alamat
+                        </label>
+
+                        <input
+                            type="text"
+                            id="editAlamatPelanggan"
+                            value="${escapeHtml(data.alamat || "")}"
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            No. Telepon
+                        </label>
+
+                        <input
+                            type="text"
+                            id="editTeleponPelanggan"
+                            value="${escapeHtml(data.no_telepon || "")}"
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-actions">
+
+                    <button
+                        type="button"
+                        class="btn-secondary"
+                        onclick="dataPelanggan()"
+                    >
+                        Batal
+                    </button>
+
+
+                    <button
+                        type="submit"
+                        class="btn-primary"
+                    >
+                        💾 Simpan Perubahan
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    `;
+}
+
+// =====================================================
+// GENERATE KODE PELANGGAN OTOMATIS
+// =====================================================
+
+async function generateKodePelanggan() {
+
+    const {
+        data,
+        error
+    } = await supabaseClient
+        .from("pelanggan")
+        .select("kode_pelanggan")
+        .order("id_pelanggan", {
+            ascending: false
+        })
+        .limit(1);
+
+    if (error) {
+
+        console.error(
+            "Gagal mengambil kode pelanggan terakhir:",
+            error
+        );
+
+        return "PLG001";
+    }
+
+    if (
+        !data ||
+        data.length === 0 ||
+        !data[0].kode_pelanggan
+    ) {
+
+        return "PLG001";
+    }
+
+    const kodeTerakhir =
+        data[0].kode_pelanggan;
+
+    const nomorTerakhir =
+        parseInt(
+            kodeTerakhir.replace("PLG", ""),
+            10
+        );
+
+    const nomorBaru =
+        (nomorTerakhir || 0) + 1;
+
+    return (
+        "PLG" +
+        String(nomorBaru).padStart(3, "0")
+    );
+}
 
 // =====================================================
 // TAMBAH PELANGGAN
@@ -4562,7 +5649,8 @@ function tambahPelanggan() {
                         <input
                             type="text"
                             id="kodePelanggan"
-                            placeholder="Contoh: PLG002"
+                            placeholder="Membuat kode otomatis..."
+                            readonly
                             required
                         >
 
@@ -4642,8 +5730,104 @@ function tambahPelanggan() {
 
     `;
 
+
+    // MEMBUAT KODE PELANGGAN OTOMATIS
+
+    generateKodePelanggan()
+        .then(function(kode) {
+
+            const inputKode =
+                document.getElementById(
+                    "kodePelanggan"
+                );
+
+            if (inputKode) {
+
+                inputKode.value = kode;
+
+            }
+
+        })
+        .catch(function(error) {
+
+            console.error(
+                "Gagal membuat kode pelanggan:",
+                error
+            );
+
+            const inputKode =
+                document.getElementById(
+                    "kodePelanggan"
+                );
+
+            if (inputKode) {
+
+                inputKode.value = "PLG001";
+
+            }
+
+        });
+
 }
 
+// =====================================================
+// SIMPAN EDIT PELANGGAN
+// =====================================================
+
+async function simpanEditPelanggan(event, idPelanggan) {
+
+    event.preventDefault();
+
+    if (!cekSupabase()) {
+        return;
+    }
+
+    const kodePelanggan =
+        document.getElementById("editKodePelanggan")
+            .value.trim();
+
+    const namaPelanggan =
+        document.getElementById("editNamaPelanggan")
+            .value.trim();
+
+    const alamat =
+        document.getElementById("editAlamatPelanggan")
+            .value.trim();
+
+    const noTelepon =
+        document.getElementById("editTeleponPelanggan")
+            .value.trim();
+
+
+    const { error } = await supabaseClient
+        .from("pelanggan")
+        .update({
+            kode_pelanggan: kodePelanggan,
+            nama_pelanggan: namaPelanggan,
+            alamat: alamat,
+            no_telepon: noTelepon
+        })
+        .eq("id_pelanggan", idPelanggan);
+
+
+    if (error) {
+
+        alert(
+            "Gagal memperbarui pelanggan:\n\n" +
+            error.message
+        );
+
+        return;
+    }
+
+
+    alert(
+        "Data pelanggan berhasil diperbarui!"
+    );
+
+
+    await dataPelanggan();
+} 
 
 // =====================================================
 // SIMPAN PELANGGAN
@@ -5223,10 +6407,18 @@ window.pembelianBaru = async function pembelianBaru() {
 }; 
 
 // =====================================================
+// PAGINATION PEMBELIAN
+// =====================================================
+
+let halamanPembelian = 1;
+const dataPerHalamanPembelian = 10;
+
+
+// =====================================================
 // TAMPILKAN PEMBELIAN
 // =====================================================
 
-async function tampilkanPembelian() {
+async function tampilkanPembelian(halaman = 1) {
 
     const container =
         document.getElementById(
@@ -5347,6 +6539,54 @@ async function tampilkanPembelian() {
 
 
     // =================================================
+    // HITUNG PAGINATION
+    // =================================================
+
+    const totalData =
+        data.length;
+
+    const totalHalaman =
+        Math.ceil(
+            totalData /
+            dataPerHalamanPembelian
+        );
+
+
+    // Pastikan halaman valid
+
+    if (halaman < 1) {
+        halaman = 1;
+    }
+
+    if (halaman > totalHalaman) {
+        halaman = totalHalaman;
+    }
+
+
+    halamanPembelian =
+        halaman;
+
+
+    const mulai =
+        (
+            halaman - 1
+        ) *
+        dataPerHalamanPembelian;
+
+
+    const selesai =
+        mulai +
+        dataPerHalamanPembelian;
+
+
+    const dataHalaman =
+        data.slice(
+            mulai,
+            selesai
+        );
+
+
+    // =================================================
     // TABEL PEMBELIAN
     // =================================================
 
@@ -5407,10 +6647,10 @@ async function tampilkanPembelian() {
 
 
     // =================================================
-    // TAMPILKAN DATA
+    // TAMPILKAN DATA HALAMAN
     // =================================================
 
-    data.forEach(
+    dataHalaman.forEach(
         function (
             item,
             index
@@ -5443,22 +6683,7 @@ async function tampilkanPembelian() {
 
 
             // =========================================
-            // DATA BARANG
-            // =========================================
-
-            const barang =
-                detail &&
-                detail.barang
-                    ? (
-                        detail.barang.kode_barang +
-                        " - " +
-                        detail.barang.nama_barang
-                    )
-                    : "-";
-
-
-            // =========================================
-            // NAMA BARANG SAJA
+            // NAMA BARANG
             // =========================================
 
             const namaBarang =
@@ -5511,7 +6736,7 @@ async function tampilkanPembelian() {
                 <tr>
 
                     <td>
-                        ${index + 1}
+                        ${mulai + index + 1}
                     </td>
 
 
@@ -5607,6 +6832,55 @@ async function tampilkanPembelian() {
                 </tbody>
 
             </table>
+
+        </div>
+
+
+        <!-- =========================================
+             PAGINATION
+        ========================================== -->
+
+        <div
+            class="pagination"
+            style="
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 10px;
+                margin-top: 20px;
+                flex-wrap: wrap;
+            "
+        >
+
+            <button
+                type="button"
+                class="btn-secondary"
+                onclick="tampilkanPembelian(${halaman - 1})"
+                ${halaman === 1 ? "disabled" : ""}
+            >
+                ← Sebelumnya
+            </button>
+
+
+            <span
+                style="
+                    padding: 8px 14px;
+                    font-weight: 600;
+                "
+            >
+                Halaman ${halaman}
+                dari ${totalHalaman}
+            </span>
+
+
+            <button
+                type="button"
+                class="btn-secondary"
+                onclick="tampilkanPembelian(${halaman + 1})"
+                ${halaman === totalHalaman ? "disabled" : ""}
+            >
+                Berikutnya →
+            </button>
 
         </div>
 
@@ -8294,12 +9568,19 @@ async function penjualan() {
 
 }
 
+// =====================================================
+// PAGINATION PENJUALAN
+// =====================================================
+
+let halamanPenjualan = 1;
+const dataPerHalamanPenjualan = 10;
+
 
 // =====================================================
 // TAMPILKAN PENJUALAN
 // =====================================================
 
-async function tampilkanPenjualan() {
+async function tampilkanPenjualan(halaman = 1) {
 
     const container =
         document.getElementById(
@@ -8316,6 +9597,10 @@ async function tampilkanPenjualan() {
         return;
     }
 
+
+    // =================================================
+    // AMBIL DATA PENJUALAN
+    // =================================================
 
     const {
         data,
@@ -8353,6 +9638,10 @@ async function tampilkanPenjualan() {
             );
 
 
+    // =================================================
+    // CEK ERROR
+    // =================================================
+
     if (error) {
 
         container.innerHTML = `
@@ -8374,9 +9663,12 @@ async function tampilkanPenjualan() {
         `;
 
         return;
-
     }
 
+
+    // =================================================
+    // JIKA BELUM ADA DATA
+    // =================================================
 
     if (
         !data ||
@@ -8401,8 +9693,55 @@ async function tampilkanPenjualan() {
         `;
 
         return;
-
     }
+
+
+    // =================================================
+    // HITUNG PAGINATION
+    // =================================================
+
+    const totalData =
+        data.length;
+
+
+    const totalHalaman =
+        Math.ceil(
+            totalData /
+            dataPerHalamanPenjualan
+        );
+
+
+    if (halaman < 1) {
+        halaman = 1;
+    }
+
+
+    if (halaman > totalHalaman) {
+        halaman = totalHalaman;
+    }
+
+
+    halamanPenjualan =
+        halaman;
+
+
+    const mulai =
+        (
+            halaman - 1
+        ) *
+        dataPerHalamanPenjualan;
+
+
+    const selesai =
+        mulai +
+        dataPerHalamanPenjualan;
+
+
+    const dataHalaman =
+        data.slice(
+            mulai,
+            selesai
+        );
 
 
     // =================================================
@@ -8464,7 +9803,11 @@ async function tampilkanPenjualan() {
     `;
 
 
-    data.forEach(
+    // =================================================
+    // TAMPILKAN DATA HALAMAN
+    // =================================================
+
+    dataHalaman.forEach(
         function (
             item,
             index
@@ -8501,7 +9844,7 @@ async function tampilkanPenjualan() {
                 <tr>
 
                     <td>
-                        ${index + 1}
+                        ${mulai + index + 1}
                     </td>
 
 
@@ -8554,11 +9897,13 @@ async function tampilkanPenjualan() {
 
 
                     <td>
+
                         ${
                             detail
                                 ? detail.jumlah
                                 : 0
                         }
+
                     </td>
 
 
@@ -8602,6 +9947,10 @@ async function tampilkanPenjualan() {
     );
 
 
+    // =================================================
+    // PAGINATION
+    // =================================================
+
     html += `
 
                 </tbody>
@@ -8610,8 +9959,57 @@ async function tampilkanPenjualan() {
 
         </div>
 
+
+        <div
+            class="pagination"
+            style="
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 10px;
+                margin-top: 20px;
+                flex-wrap: wrap;
+            "
+        >
+
+            <button
+                type="button"
+                class="btn-secondary"
+                onclick="tampilkanPenjualan(${halaman - 1})"
+                ${halaman === 1 ? "disabled" : ""}
+            >
+                ← Sebelumnya
+            </button>
+
+
+            <span
+                style="
+                    padding: 8px 14px;
+                    font-weight: 600;
+                "
+            >
+                Halaman ${halaman}
+                dari ${totalHalaman}
+            </span>
+
+
+            <button
+                type="button"
+                class="btn-secondary"
+                onclick="tampilkanPenjualan(${halaman + 1})"
+                ${halaman === totalHalaman ? "disabled" : ""}
+            >
+                Berikutnya →
+            </button>
+
+        </div>
+
     `;
 
+
+    // =================================================
+    // TAMPILKAN KE HALAMAN
+    // =================================================
 
     container.innerHTML =
         html;
@@ -10781,12 +12179,18 @@ async function simpanPenyesuaianStok() {
 
 }
 
+// =====================================================
+// PAGINATION RIWAYAT PENYESUAIAN
+// =====================================================
+
+let halamanPenyesuaian = 1;
+const dataPerHalamanPenyesuaian = 10;
 
 // =====================================================
 // RIWAYAT PENYESUAIAN
 // =====================================================
 
-async function muatRiwayatPenyesuaian() {
+async function muatRiwayatPenyesuaian(halaman = 1) {
 
     const container =
         document.getElementById(
@@ -10862,6 +12266,58 @@ async function muatRiwayatPenyesuaian() {
     }
 
 
+    // =================================================
+    // PAGINATION
+    // =================================================
+
+    const totalData =
+        data.length;
+
+
+    const totalHalaman =
+        Math.ceil(
+            totalData /
+            dataPerHalamanPenyesuaian
+        );
+
+
+    if (halaman < 1) {
+        halaman = 1;
+    }
+
+
+    if (halaman > totalHalaman) {
+        halaman = totalHalaman;
+    }
+
+
+    halamanPenyesuaian =
+        halaman;
+
+
+    const mulai =
+        (
+            halaman - 1
+        ) *
+        dataPerHalamanPenyesuaian;
+
+
+    const selesai =
+        mulai +
+        dataPerHalamanPenyesuaian;
+
+
+    const dataHalaman =
+        data.slice(
+            mulai,
+            selesai
+        );
+
+
+    // =================================================
+    // TABEL
+    // =================================================
+
     let html = `
 
         <div class="table-container">
@@ -10872,6 +12328,7 @@ async function muatRiwayatPenyesuaian() {
 
                     <tr>
 
+                        <th>No</th>
                         <th>Tanggal</th>
                         <th>Kode</th>
                         <th>Barang</th>
@@ -10890,12 +12347,19 @@ async function muatRiwayatPenyesuaian() {
     `;
 
 
-    data.forEach(
-        function (item) {
+    dataHalaman.forEach(
+        function (
+            item,
+            index
+        ) {
 
             html += `
 
                 <tr>
+
+                    <td>
+                        ${mulai + index + 1}
+                    </td>
 
                     <td>
                         ${
@@ -10955,11 +12419,60 @@ async function muatRiwayatPenyesuaian() {
     );
 
 
+    // =================================================
+    // PAGINATION
+    // =================================================
+
     html += `
 
                 </tbody>
 
             </table>
+
+        </div>
+
+
+        <div
+            class="pagination"
+            style="
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 10px;
+                margin-top: 20px;
+                flex-wrap: wrap;
+            "
+        >
+
+            <button
+                type="button"
+                class="btn-secondary"
+                onclick="muatRiwayatPenyesuaian(${halaman - 1})"
+                ${halaman === 1 ? "disabled" : ""}
+            >
+                ← Sebelumnya
+            </button>
+
+
+            <span
+                style="
+                    padding: 8px 14px;
+                    font-weight: 600;
+                "
+            >
+                Halaman ${halaman}
+                dari ${totalHalaman}
+            </span>
+
+
+            <button
+                type="button"
+                class="btn-secondary"
+                onclick="muatRiwayatPenyesuaian(${halaman + 1})"
+                ${halaman === totalHalaman ? "disabled" : ""}
+            >
+                Berikutnya →
+            </button>
 
         </div>
 
@@ -11333,7 +12846,6 @@ async function laporanStok() {
 
         </div>
 
-
         <!-- =================================================
              TOMBOL CETAK
         ================================================== -->
@@ -11358,7 +12870,6 @@ async function laporanStok() {
 
             </div>
 
-
             <button
                 type="button"
                 class="report-print-button"
@@ -11371,25 +12882,19 @@ async function laporanStok() {
 
     `;
 
-
     if (!cekSupabase()) {
         return;
     }
 
-
     await muatDataLaporanStok();
 
 }
-
-
 
 // =====================================================
 // DATA LAPORAN STOK
 // =====================================================
 
 let dataLaporanStok = [];
-
-
 
 // =====================================================
 // MUAT DATA LAPORAN STOK
@@ -11402,18 +12907,15 @@ async function muatDataLaporanStok() {
             "laporanStokContainer"
         );
 
-
     if (!container) {
         return;
     }
-
 
     container.innerHTML = `
         <div class="report-loading">
             Memuat data persediaan...
         </div>
     `;
-
 
     const {
         data,
@@ -11438,14 +12940,12 @@ async function muatDataLaporanStok() {
             }
         );
 
-
     if (error) {
 
         console.error(
             "Gagal memuat laporan stok:",
             error
         );
-
 
         container.innerHTML = `
 
@@ -11463,24 +12963,18 @@ async function muatDataLaporanStok() {
 
     }
 
-
     dataLaporanStok =
         data || [];
 
-
     isiKategoriLaporanStok();
 
-
     tampilkanRingkasanLaporanStok();
-
 
     tampilkanTabelLaporanStok(
         dataLaporanStok
     );
 
 }
-
-
 
 // =====================================================
 // KATEGORI FILTER
@@ -11493,11 +12987,9 @@ function isiKategoriLaporanStok() {
             "kategoriLaporanStok"
         );
 
-
     if (!select) {
         return;
     }
-
 
     const kategoriUnik =
         [
@@ -11583,8 +13075,6 @@ function tentukanStatusStokLaporan(
 
 }
 
-
-
 // =====================================================
 // NAMA STATUS
 // =====================================================
@@ -11603,7 +13093,6 @@ function namaStatusStokLaporan(
 
     }
 
-
     if (status === "menipis") {
 
         return `
@@ -11614,7 +13103,6 @@ function namaStatusStokLaporan(
 
     }
 
-
     return `
         <span class="report-status aman">
             🟢 Aman
@@ -11622,8 +13110,6 @@ function namaStatusStokLaporan(
     `;
 
 }
-
-
 
 // =====================================================
 // RINGKASAN
@@ -11634,10 +13120,8 @@ function tampilkanRingkasanLaporanStok() {
     const data =
         dataLaporanStok;
 
-
     const totalBarang =
         data.length;
-
 
     const totalStok =
         data.reduce(
@@ -11651,7 +13135,6 @@ function tampilkanRingkasanLaporanStok() {
             },
             0
         );
-
 
     const nilaiPersediaan =
         data.reduce(
@@ -11909,18 +13392,16 @@ function filterLaporanStok() {
 
             }
         );
-
-
-    tampilkanTabelLaporanStok(
-        hasil
-    );
+tampilkanTabelLaporanStok(
+    hasil,
+    1
+);
 
 }
 
 
-
 // =====================================================
-// RESET FILTER
+// RESET FILTER LAPORAN STOK
 // =====================================================
 
 function resetFilterLaporanStok() {
@@ -11963,21 +13444,27 @@ function resetFilterLaporanStok() {
 
     }
 
-
-    tampilkanTabelLaporanStok(
-        dataLaporanStok
-    );
+tampilkanTabelLaporanStok(
+    dataLaporanStok,
+    1
+);
 
 }
 
+// =====================================================
+// PAGINATION LAPORAN STOK
+// =====================================================
 
+let halamanLaporanStok = 1;
+const dataPerHalamanLaporanStok = 10;
 
 // =====================================================
 // TABEL LAPORAN STOK
 // =====================================================
 
 function tampilkanTabelLaporanStok(
-    data
+    data,
+    halaman = 1
 ) {
 
     const container =
@@ -11997,6 +13484,10 @@ function tampilkanTabelLaporanStok(
     }
 
 
+    // =================================================
+    // JUMLAH DATA
+    // =================================================
+
     if (jumlahElement) {
 
         jumlahElement.textContent =
@@ -12004,6 +13495,10 @@ function tampilkanTabelLaporanStok(
 
     }
 
+
+    // =================================================
+    // JIKA DATA KOSONG
+    // =================================================
 
     if (
         !data ||
@@ -12035,6 +13530,58 @@ function tampilkanTabelLaporanStok(
 
     }
 
+
+    // =================================================
+    // HITUNG PAGINATION
+    // =================================================
+
+    const totalData =
+        data.length;
+
+
+    const totalHalaman =
+        Math.ceil(
+            totalData /
+            dataPerHalamanLaporanStok
+        );
+
+
+    if (halaman < 1) {
+        halaman = 1;
+    }
+
+
+    if (halaman > totalHalaman) {
+        halaman = totalHalaman;
+    }
+
+
+    halamanLaporanStok =
+        halaman;
+
+
+    const mulai =
+        (
+            halaman - 1
+        ) *
+        dataPerHalamanLaporanStok;
+
+
+    const selesai =
+        mulai +
+        dataPerHalamanLaporanStok;
+
+
+    const dataHalaman =
+        data.slice(
+            mulai,
+            selesai
+        );
+
+
+    // =================================================
+    // TABEL
+    // =================================================
 
     let html = `
 
@@ -12074,9 +13621,15 @@ function tampilkanTabelLaporanStok(
 
     `;
 
+    // =================================================
+    // TAMPILKAN DATA HALAMAN
+    // =================================================
 
-    data.forEach(
-        function(item, index) {
+    dataHalaman.forEach(
+        function(
+            item,
+            index
+        ) {
 
             const stok =
                 Number(
@@ -12113,7 +13666,7 @@ function tampilkanTabelLaporanStok(
                 <tr>
 
                     <td>
-                        ${index + 1}
+                        ${mulai + index + 1}
                     </td>
 
                     <td>
@@ -12184,11 +13737,66 @@ function tampilkanTabelLaporanStok(
     );
 
 
+    // =================================================
+    // PAGINATION
+    // =================================================
+
     html += `
 
                 </tbody>
 
             </table>
+
+        </div>
+
+
+        <div
+            class="pagination"
+            style="
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 10px;
+                margin-top: 20px;
+                flex-wrap: wrap;
+            "
+        >
+
+            <button
+                type="button"
+                class="btn-secondary"
+                onclick="tampilkanTabelLaporanStok(
+                    dataLaporanStok,
+                    ${halaman - 1}
+                )"
+                ${halaman === 1 ? "disabled" : ""}
+            >
+                ← Sebelumnya
+            </button>
+
+
+            <span
+                style="
+                    padding: 8px 14px;
+                    font-weight: 600;
+                "
+            >
+                Halaman ${halaman}
+                dari ${totalHalaman}
+            </span>
+
+
+            <button
+                type="button"
+                class="btn-secondary"
+                onclick="tampilkanTabelLaporanStok(
+                    dataLaporanStok,
+                    ${halaman + 1}
+                )"
+                ${halaman === totalHalaman ? "disabled" : ""}
+            >
+                Berikutnya →
+            </button>
 
         </div>
 
@@ -12199,8 +13807,6 @@ function tampilkanTabelLaporanStok(
         html;
 
 }
-
-
 
 // =====================================================
 // FORMAT RUPIAH
@@ -12240,7 +13846,6 @@ function cetakLaporanStok() {
 
         return;
     }
-
 
     // =================================================
     // AMBIL FILTER
@@ -12711,7 +14316,6 @@ function cetakLaporanStok() {
                     width: 100%;
 
                 }
-
 
                 /* =====================================
                    HEADER PERUSAHAAN
@@ -13811,7 +15415,7 @@ function cetakLaporanStok() {
 // =====================================================
 
 let dataLaporanPembelian = [];
-
+let dataLaporanPembelianTerfilter = [];
 
 // =====================================================
 // TAMPILAN LAPORAN PEMBELIAN
@@ -14481,11 +16085,12 @@ function terapkanFilterLaporanPembelian() {
             }
         );
 
+    dataLaporanPembelianTerfilter = hasil;
 
-    tampilkanDataLaporanPembelian(
-        hasil
-    );
-
+tampilkanDataLaporanPembelian(
+    hasil,
+    1
+);
 
     tampilkanRekapPemasokPembelian(
         hasil
@@ -14499,11 +16104,15 @@ function terapkanFilterLaporanPembelian() {
 }
 
 // =====================================================
-// TAMPILKAN TABEL PEMBELIAN
+// PAGINATION LAPORAN PEMBELIAN
 // =====================================================
 
+let halamanLaporanPembelian = 1;
+const dataPerHalamanLaporanPembelian = 10;
+
 function tampilkanDataLaporanPembelian(
-    data
+    data,
+    halaman = 1
 ) {
 
     const tabel =
@@ -14523,18 +16132,11 @@ function tampilkanDataLaporanPembelian(
     }
 
 
-    if (count) {
+    if (!data || data.length === 0) {
 
-        count.textContent =
-            `${data.length} transaksi`;
-
-    }
-
-
-    if (
-        !data ||
-        data.length === 0
-    ) {
+        if (count) {
+            count.textContent = "0 transaksi";
+        }
 
         tabel.innerHTML = `
 
@@ -14566,10 +16168,64 @@ function tampilkanDataLaporanPembelian(
     }
 
 
+    // =========================================
+    // PAGINATION
+    // =========================================
+
+    const totalData =
+        data.length;
+
+
+    const totalHalaman =
+        Math.ceil(
+            totalData /
+            dataPerHalamanLaporanPembelian
+        );
+
+
+    if (halaman < 1) {
+        halaman = 1;
+    }
+
+
+    if (halaman > totalHalaman) {
+        halaman = totalHalaman;
+    }
+
+
+    halamanLaporanPembelian =
+        halaman;
+
+
+    const mulai =
+        (halaman - 1) *
+        dataPerHalamanLaporanPembelian;
+
+
+    const selesai =
+        mulai +
+        dataPerHalamanLaporanPembelian;
+
+
+    const dataHalaman =
+        data.slice(
+            mulai,
+            selesai
+        );
+
+
+    if (count) {
+
+        count.textContent =
+            `${totalData} transaksi`;
+
+    }
+
+
     let html = "";
 
 
-    data.forEach(
+    dataHalaman.forEach(
         function (item, index) {
 
 
@@ -14660,63 +16316,125 @@ function tampilkanDataLaporanPembelian(
 
 
             // =========================================
-// TAMPILKAN BARIS
+            // TAMPILKAN BARIS
+            // =========================================
+
+            html += `
+
+                <tr>
+
+                    <td>
+                        ${mulai + index + 1}
+                    </td>
+
+                    <td>
+
+                        <strong>
+                            ${escapeHtml(
+                                item.nomor_pembelian || "-"
+                            )}
+                        </strong>
+
+                    </td>
+
+                    <td>
+                        ${formatTanggalPembelian(
+                            item.tanggal_pembelian
+                        )}
+                    </td>
+
+                    <td>
+                        ${escapeHtml(
+                            namaPemasok
+                        )}
+                    </td>
+
+                    <td>
+                        ${namaBarang}
+                    </td>
+
+                    <td>
+                        ${jumlahBarang}
+                    </td>
+
+                    <td>
+                        ${formatRupiah(
+                            item.total_pembelian
+                        )}
+                    </td>
+
+                </tr>
+
+            `;
+
+        }
+    );
+
+// =========================================
+// PAGINATION BUTTON
 // =========================================
 
 html += `
 
     <tr>
 
-        <td>
-            ${index + 1}
-        </td>
+        <td colspan="7">
 
-        <td>
+            <div
+                class="pagination"
+                style="
+                    display:flex;
+                    justify-content:center;
+                    align-items:center;
+                    gap:12px;
+                    margin-top:15px;
+                "
+            >
 
-            <strong>
-                ${escapeHtml(
-                    item.nomor_pembelian || "-"
-                )}
-            </strong>
+                <button
+                    type="button"
+                    class="btn-secondary"
+                    onclick="
+                        tampilkanDataLaporanPembelian(
+                            dataLaporanPembelianTerfilter,
+                            ${halaman - 1}
+                        )
+                    "
+                    ${halaman === 1 ? "disabled" : ""}
+                >
+                    ← Sebelumnya
+                </button>
 
-        </td>
 
-        <td>
-            ${formatTanggalPembelian(
-                item.tanggal_pembelian
-            )}
-        </td>
+                <span>
+                    Halaman ${halaman} dari ${totalHalaman}
+                </span>
 
-        <td>
-            ${escapeHtml(
-                namaPemasok
-            )}
-        </td>
 
-        <td>
-            ${namaBarang}
-        </td>
+                <button
+                    type="button"
+                    class="btn-secondary"
+                    onclick="
+                        tampilkanDataLaporanPembelian(
+                            dataLaporanPembelianTerfilter,
+                            ${halaman + 1}
+                        )
+                    "
+                    ${halaman === totalHalaman ? "disabled" : ""}
+                >
+                    Berikutnya →
+                </button>
 
-        <td>
-            ${jumlahBarang}
-        </td>
+            </div>
 
-        <td>
-            ${formatRupiah(
-                item.total_pembelian
-            )}
         </td>
 
     </tr>
 
 `;
 
-}
-);
-
-
-tabel.innerHTML =
-    html;
+    tabel.innerHTML =
+        html;
 
 }
 
@@ -17375,9 +19093,12 @@ function terapkanFilterLaporanPenjualan() {
         ); 
  
  
-    tampilkanDataLaporanPenjualan( 
-        hasil 
-    ); 
+  dataLaporanPenjualanTerfilter = hasil;
+
+tampilkanDataLaporanPenjualan(
+    hasil,
+    1
+);
  
  
     tampilkanRekapPelangganPenjualan( 
@@ -17390,13 +19111,20 @@ function terapkanFilterLaporanPenjualan() {
     ); 
  
 } 
+// =====================================================
+// PAGINATION LAPORAN PENJUALAN
+// =====================================================
+
+let halamanLaporanPenjualan = 1;
+const dataPerHalamanLaporanPenjualan = 10;
 
 // =====================================================
 // TAMPILKAN TABEL PENJUALAN
 // =====================================================
 
 function tampilkanDataLaporanPenjualan(
-    data
+    data,
+    halaman = 1
 ) {
 
     const tabel =
@@ -17404,30 +19132,23 @@ function tampilkanDataLaporanPenjualan(
             "tabelLaporanPenjualan"
         );
 
-
     const count =
         document.getElementById(
             "penjualanDataCount"
         );
 
-
     if (!tabel) {
         return;
     }
-
-
-    if (count) {
-
-        count.textContent =
-            `${data.length} transaksi`;
-
-    }
-
 
     if (
         !data ||
         data.length === 0
     ) {
+
+        if (count) {
+            count.textContent = "0 transaksi";
+        }
 
         tabel.innerHTML = `
 
@@ -17461,10 +19182,61 @@ function tampilkanDataLaporanPenjualan(
     }
 
 
+    // =====================================================
+    // HITUNG PAGINATION
+    // =====================================================
+
+    const totalData =
+        data.length;
+
+    const totalHalaman =
+        Math.ceil(
+            totalData /
+            dataPerHalamanLaporanPenjualan
+        );
+
+
+    if (halaman < 1) {
+        halaman = 1;
+    }
+
+    if (halaman > totalHalaman) {
+        halaman = totalHalaman;
+    }
+
+
+    halamanLaporanPenjualan =
+        halaman;
+
+
+    const mulai =
+        (halaman - 1) *
+        dataPerHalamanLaporanPenjualan;
+
+    const selesai =
+        mulai +
+        dataPerHalamanLaporanPenjualan;
+
+
+    const dataHalaman =
+        data.slice(
+            mulai,
+            selesai
+        );
+
+
+    if (count) {
+
+        count.textContent =
+            `${totalData} transaksi`;
+
+    }
+
+
     let html = "";
 
 
-    data.forEach(
+    dataHalaman.forEach(
         function (item, index) {
 
             const detail =
@@ -17516,6 +19288,7 @@ function tampilkanDataLaporanPenjualan(
                                     const nama =
                                         detailItem.barang.nama_barang || "";
 
+
                                     if (
                                         kode &&
                                         nama
@@ -17529,6 +19302,7 @@ function tampilkanDataLaporanPenjualan(
 
                                     }
 
+
                                     return (
                                         nama ||
                                         kode ||
@@ -17536,6 +19310,7 @@ function tampilkanDataLaporanPenjualan(
                                     );
 
                                 }
+
 
                                 return "-";
 
@@ -17550,7 +19325,7 @@ function tampilkanDataLaporanPenjualan(
                 <tr>
 
                     <td>
-                        ${index + 1}
+                        ${mulai + index + 1}
                     </td>
 
                     <td>
@@ -17595,6 +19370,68 @@ function tampilkanDataLaporanPenjualan(
 
         }
     );
+
+
+    // =====================================================
+    // PAGINATION
+    // =====================================================
+
+    html += `
+
+        <tr>
+
+            <td colspan="7">
+
+                <div
+                    class="pagination"
+                    style="
+                        display:flex;
+                        justify-content:center;
+                        align-items:center;
+                        gap:10px;
+                        padding:15px 0;
+                    "
+                >
+
+                    <button
+                        type="button"
+                        onclick="
+                            tampilkanDataLaporanPenjualan(
+                                dataLaporanPenjualanTerfilter,
+                                ${halaman - 1}
+                            )
+                        "
+                        ${halaman === 1 ? "disabled" : ""}
+                    >
+                        ← Sebelumnya
+                    </button>
+
+
+                    <span>
+                        Halaman ${halaman} dari ${totalHalaman}
+                    </span>
+
+
+                    <button
+                        type="button"
+                        onclick="
+                            tampilkanDataLaporanPenjualan(
+                                dataLaporanPenjualanTerfilter,
+                                ${halaman + 1}
+                            )
+                        "
+                        ${halaman === totalHalaman ? "disabled" : ""}
+                    >
+                        Berikutnya →
+                    </button>
+
+                </div>
+
+            </td>
+
+        </tr>
+
+    `;
 
 
     tabel.innerHTML =
@@ -19886,45 +21723,7 @@ async function kartuPersediaan() {
     window.dataBarangKartuPersediaan =
         dataBarangKartu || [];
 
-
-// =================================================
-// TANGGAL DEFAULT
-// =================================================
-
-const hariIni =
-    new Date();
-
-const tanggalAkhir =
-    hariIni
-        .toISOString()
-        .split("T")[0];
-
-const tanggalAwalObj =
-    new Date(
-        hariIni
-    );
-
-tanggalAwalObj.setDate(
-    tanggalAwalObj.getDate() - 30
-);
-
-const tanggalAwal =
-    tanggalAwalObj
-        .toISOString()
-        .split("T")[0];
-
-document.getElementById(
-    "kartuTanggalMulai"
-).value =
-    tanggalAwal;
-
-document.getElementById(
-    "kartuTanggalAkhir"
-).value =
-    tanggalAkhir;
-
-}
-
+    }
 
 // =====================================================
 // TAMPILKAN KARTU PERSEDIAAN
@@ -22614,7 +24413,6 @@ function pengaturan() {
 
 }
 
-
 // =====================================================
 // PROFIL TOKO
 // =====================================================
@@ -22625,6 +24423,15 @@ async function profilToko() {
 
     isi.innerHTML = `
         <div class="content-box">
+
+            <button
+                type="button"
+                class="btn-secondary"
+                onclick="pengaturan()"
+                style="margin-bottom: 20px;"
+            >
+                ← Kembali
+            </button>
 
             <h2>
                 Profil Toko
@@ -22639,7 +24446,6 @@ async function profilToko() {
 
     await tampilkanProfilToko();
 }
-
 
 // =====================================================
 // TAMPILKAN PROFIL TOKO
@@ -23264,7 +25070,7 @@ async function hapusProfilToko(idProfil) {
 
 
 // =====================================================
-// KEAMANAN TAMPILAN TEKS
+// TAMPILAN SISTEM
 // =====================================================
 
 function escapeHTML(teks) {
@@ -23289,9 +25095,20 @@ function tampilanSistem() {
 
         <div class="content-box">
 
+            <button
+                type="button"
+                class="btn-secondary"
+                onclick="pengaturan()"
+                style="margin-bottom: 20px;"
+            >
+                ← Kembali
+            </button>
+
+
             <h2>
                 Tampilan Sistem
             </h2>
+
 
             <div class="settings-grid">
 
@@ -23343,7 +25160,6 @@ function tampilanSistem() {
     `;
 
 }
-
 
 // =====================================================
 // UBAH TEMA
@@ -23432,7 +25248,6 @@ function loadTema() {
 
 }
 
-
 // =====================================================
 // TENTANG APLIKASI
 // =====================================================
@@ -23444,6 +25259,16 @@ function tentangAplikasi() {
     ).innerHTML = `
 
         <div class="content-box">
+
+            <button
+                type="button"
+                class="btn-secondary"
+                onclick="pengaturan()"
+                style="margin-bottom: 20px;"
+            >
+                ← Kembali
+            </button>
+
 
             <div class="about-app">
 
@@ -23949,6 +25774,16 @@ async function muatJurnalUmum() {
 
 }
 
+// =====================================================
+// PAGINATION JURNAL UMUM
+// 10 TRANSAKSI PER HALAMAN
+// =====================================================
+
+let dataJurnalUmumTerfilter = [];
+
+let halamanJurnalUmum = 1;
+
+const transaksiPerHalamanJurnal = 10;
 
 // =====================================================
 // FILTER JURNAL
@@ -24070,87 +25905,89 @@ function terapkanFilterJurnalUmum() {
         );
 
 
-    tampilkanJurnalUmum(hasil);
+    dataJurnalUmumTerfilter = hasil;
+
+halamanJurnalUmum = 1;
+
+tampilkanJurnalUmum(
+    dataJurnalUmumTerfilter,
+    1
+);
 
 }
 
-
 // =====================================================
-// TAMPILKAN JURNAL
+// TAMPILKAN JURNAL UMUM
+// 10 TRANSAKSI PER HALAMAN
 // =====================================================
 
-function tampilkanJurnalUmum(data) {
+function tampilkanJurnalUmum(
+    data,
+    halaman = 1
+) {
 
     const tabel =
         document.getElementById(
             "tabelJurnalUmum"
         );
 
-
     const footer =
         document.getElementById(
             "footerJurnalUmum"
         );
-
 
     if (!tabel) {
         return;
     }
 
 
-    let totalDebit = 0;
+    // =================================================
+    // TOTAL KESELURUHAN DATA
+    // =================================================
 
+    let totalDebit = 0;
     let totalKredit = 0;
 
-
-    const nomorBuktiSet =
-        new Set();
+    const nomorBuktiSet = new Set();
 
 
-    data.forEach(
-        function (item) {
+    data.forEach(function(item) {
 
-            totalDebit +=
-                Number(
-                    item.debit || 0
-                );
+        totalDebit +=
+            Number(item.debit || 0);
 
+        totalKredit +=
+            Number(item.kredit || 0);
 
-            totalKredit +=
-                Number(
-                    item.kredit || 0
-                );
+        if (item.nomor_bukti) {
 
-
-            if (item.nomor_bukti) {
-
-                nomorBuktiSet.add(
-                    item.nomor_bukti
-                );
-
-            }
+            nomorBuktiSet.add(
+                item.nomor_bukti
+            );
 
         }
-    );
 
+    });
+
+
+    // =================================================
+    // UPDATE RINGKASAN
+    // =================================================
 
     const totalBaris =
         document.getElementById(
             "jurnalTotalBaris"
         );
 
-
     const totalTransaksi =
         document.getElementById(
             "jurnalTotalTransaksi"
         );
 
-
     const totalDebitElement =
         document.getElementById(
             "jurnalTotalDebit"
         );
-
 
     const totalKreditElement =
         document.getElementById(
@@ -24190,6 +26027,10 @@ function tampilkanJurnalUmum(data) {
     }
 
 
+    // =================================================
+    // JIKA DATA KOSONG
+    // =================================================
+
     if (data.length === 0) {
 
         tabel.innerHTML = `
@@ -24200,6 +26041,7 @@ function tampilkanJurnalUmum(data) {
                     colspan="8"
                     class="empty"
                 >
+
                     Belum ada data jurnal umum.
 
                 </td>
@@ -24216,198 +26058,329 @@ function tampilkanJurnalUmum(data) {
         }
 
         return;
+
     }
 
+
+    // =================================================
+    // KELOMPOKKAN BERDASARKAN NOMOR BUKTI
+    // =================================================
+
+    const kelompokTransaksi = [];
+
+    const mapTransaksi = new Map();
+
+
+    data.forEach(function(item) {
+
+        /*
+         * Jika ada nomor_bukti,
+         * semua baris dengan nomor bukti
+         * yang sama dianggap 1 transaksi.
+         *
+         * Jika tidak ada nomor_bukti,
+         * setiap baris dianggap transaksi sendiri.
+         */
+
+        const key =
+            item.nomor_bukti
+                ? "NO:" + item.nomor_bukti
+                : "ROW:" + item.id_jurnal;
+
+
+        if (!mapTransaksi.has(key)) {
+
+            const group = {
+
+                key: key,
+
+                nomor_bukti:
+                    item.nomor_bukti || "-",
+
+                items: []
+
+            };
+
+
+            mapTransaksi.set(
+                key,
+                group
+            );
+
+
+            kelompokTransaksi.push(
+                group
+            );
+
+        }
+
+
+        mapTransaksi
+            .get(key)
+            .items
+            .push(item);
+
+    });
+
+
+    // =================================================
+    // HITUNG PAGINATION
+    // =================================================
+
+    const totalHalaman =
+        Math.max(
+            1,
+            Math.ceil(
+                kelompokTransaksi.length /
+                transaksiPerHalamanJurnal
+            )
+        );
+
+
+    if (halaman < 1) {
+
+        halaman = 1;
+
+    }
+
+
+    if (halaman > totalHalaman) {
+
+        halaman =
+            totalHalaman;
+
+    }
+
+
+    halamanJurnalUmum =
+        halaman;
+
+
+    const mulaiTransaksi =
+        (
+            halaman - 1
+        ) *
+        transaksiPerHalamanJurnal;
+
+
+    const selesaiTransaksi =
+        mulaiTransaksi +
+        transaksiPerHalamanJurnal;
+
+
+    const transaksiHalaman =
+        kelompokTransaksi.slice(
+            mulaiTransaksi,
+            selesaiTransaksi
+        );
+
+
+    // =================================================
+    // BUAT BARIS TABEL
+    // =================================================
 
     let rows = "";
 
 
-    let nomorUrut = 0;
+    transaksiHalaman.forEach(
+        function(group, indexTransaksi) {
 
-    let nomorBuktiSebelumnya = null;
+            const nomorUrut =
+                mulaiTransaksi +
+                indexTransaksi +
+                1;
 
 
-    data.forEach(
-        function (item) {
+            group.items.forEach(
+                function(item, indexBaris) {
 
-            const akun =
-                item.akun || {};
+                    const akun =
+                        item.akun || {};
 
 
-            const kodeAkun =
-                akun.kode_akun || "-";
+                    const kodeAkun =
+                        akun.kode_akun ||
+                        "-";
 
 
-            const namaAkun =
-                akun.nama_akun || "-";
+                    const namaAkun =
+                        akun.nama_akun ||
+                        "-";
 
 
-            const debit =
-                Number(
-                    item.debit || 0
-                );
+                    const debit =
+                        Number(
+                            item.debit || 0
+                        );
 
 
-            const kredit =
-                Number(
-                    item.kredit || 0
-                );
+                    const kredit =
+                        Number(
+                            item.kredit || 0
+                        );
 
 
-            const nomorBukti =
-                item.nomor_bukti || "-";
+                    const transaksiBaru =
+                        indexBaris === 0;
 
 
-            const transaksiBaru =
-                nomorBukti !==
-                nomorBuktiSebelumnya;
+                    rows += `
 
+                        <tr>
 
-            if (transaksiBaru) {
+                            <!-- NO -->
 
-                nomorUrut++;
+                            <td>
 
-            }
+                                ${
+                                    transaksiBaru
+                                        ? nomorUrut
+                                        : ""
+                                }
 
+                            </td>
 
-            rows += `
 
-                <tr>
+                            <!-- TANGGAL -->
 
+                            <td>
 
-                    <!-- NO -->
+                                ${
+                                    transaksiBaru
+                                        ? formatTanggalJurnal(
+                                            item.tanggal_jurnal
+                                        )
+                                        : ""
+                                }
 
-                    <td>
+                            </td>
 
-                        ${
-                            transaksiBaru
-                                ? nomorUrut
-                                : ""
-                        }
 
-                    </td>
+                            <!-- AKUN -->
 
+                            <td>
 
-                    <!-- TANGGAL -->
+                                <strong>
 
-                    <td>
+                                    ${escapeHtml(
+                                        namaAkun
+                                    )}
 
-                        ${
-                            transaksiBaru
-                                ? formatTanggalJurnal(
-                                    item.tanggal_jurnal
-                                )
-                                : ""
-                        }
+                                </strong>
 
-                    </td>
+                            </td>
 
 
-                    <!-- AKUN -->
+                            <!-- NO. BUKTI -->
 
-                    <td>
+                            <td>
 
-                        <strong>
-                            ${escapeHtml(
-                                namaAkun
-                            )}
-                        </strong>
+                                ${
+                                    transaksiBaru
+                                        ? `
+                                            <strong>
 
-                    </td>
+                                                ${escapeHtml(
+                                                    group.nomor_bukti
+                                                )}
 
+                                            </strong>
+                                          `
+                                        : ""
+                                }
 
-                    <!-- NO. BUKTI -->
+                            </td>
 
-                    <td>
 
-                        ${
-                            transaksiBaru
-                                ? `
-                                    <strong>
-                                        ${escapeHtml(
-                                            nomorBukti
-                                        )}
-                                    </strong>
-                                  `
-                                : ""
-                        }
+                            <!-- REF -->
 
-                    </td>
+                            <td>
 
+                                ${escapeHtml(
+                                    kodeAkun
+                                )}
 
-                    <!-- REF -->
+                            </td>
 
-                    <td>
 
-                        ${escapeHtml(
-                            kodeAkun
-                        )}
+                            <!-- DEBIT -->
 
-                    </td>
+                            <td
+                                class="text-right"
+                            >
 
+                                ${
+                                    debit > 0
+                                        ? formatRupiah(
+                                            debit
+                                        )
+                                        : "-"
+                                }
 
-                    <!-- DEBIT -->
+                            </td>
 
-                    <td class="text-right">
 
-                        ${
-                            debit > 0
-                                ? formatRupiah(debit)
-                                : "-"
-                        }
+                            <!-- KREDIT -->
 
-                    </td>
+                            <td
+                                class="text-right"
+                            >
 
+                                ${
+                                    kredit > 0
+                                        ? formatRupiah(
+                                            kredit
+                                        )
+                                        : "-"
+                                }
 
-                    <!-- KREDIT -->
+                            </td>
 
-                    <td class="text-right">
 
-                        ${
-                            kredit > 0
-                                ? formatRupiah(kredit)
-                                : "-"
-                        }
+                            <!-- KETERANGAN -->
 
-                    </td>
+                            <td>
 
+                                ${
+                                    transaksiBaru
+                                        ? `
+                                            <div
+                                                class="jurnal-keterangan"
+                                            >
 
-                    <!-- KETERANGAN -->
+                                                <span>
 
-                    <td>
+                                                    ${escapeHtml(
+                                                        item.keterangan ||
+                                                        "-"
+                                                    )}
 
-                        ${
-                            transaksiBaru
-                                ? `
-                                    <div class="jurnal-keterangan">
+                                                </span>
 
-                                        <span>
-                                            ${escapeHtml(
-                                                item.keterangan || "-"
-                                            )}
-                                        </span>
 
-                                        <small>
-                                            ${escapeHtml(
-                                                item.sumber_transaksi || "-"
-                                            )}
-                                        </small>
+                                                <small>
 
-                                    </div>
-                                  `
-                                : ""
-                        }
+                                                    ${escapeHtml(
+                                                        item.sumber_transaksi ||
+                                                        "-"
+                                                    )}
 
-                    </td>
+                                                </small>
 
+                                            </div>
+                                          `
+                                        : ""
+                                }
 
-                </tr>
+                            </td>
 
-            `;
 
+                        </tr>
 
-            nomorBuktiSebelumnya =
-                nomorBukti;
+                    `;
+
+                }
+            );
 
         }
     );
@@ -24416,6 +26389,10 @@ function tampilkanJurnalUmum(data) {
     tabel.innerHTML =
         rows;
 
+
+    // =================================================
+    // TOTAL + PAGINATION
+    // =================================================
 
     if (footer) {
 
@@ -24435,23 +26412,31 @@ function tampilkanJurnalUmum(data) {
                 </td>
 
 
-                <td class="text-right">
+                <td
+                    class="text-right"
+                >
 
                     <strong>
+
                         ${formatRupiah(
                             totalDebit
                         )}
+
                     </strong>
 
                 </td>
 
 
-                <td class="text-right">
+                <td
+                    class="text-right"
+                >
 
                     <strong>
+
                         ${formatRupiah(
                             totalKredit
                         )}
+
                     </strong>
 
                 </td>
@@ -24463,12 +26448,96 @@ function tampilkanJurnalUmum(data) {
 
             </tr>
 
+
+            <!-- PAGINATION -->
+
+            <tr>
+
+                <td
+                    colspan="8"
+                    style="
+                        padding: 15px;
+                        text-align: center;
+                    "
+                >
+
+                    <div
+                        style="
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            gap: 10px;
+                            flex-wrap: wrap;
+                        "
+                    >
+
+                        <button
+                            type="button"
+                            class="btn-secondary"
+                            onclick="
+                                tampilkanJurnalUmum(
+                                    dataJurnalUmumTerfilter,
+                                    ${halamanJurnalUmum - 1}
+                                )
+                            "
+                            ${
+                                halamanJurnalUmum <= 1
+                                    ? "disabled"
+                                    : ""
+                            }
+                        >
+
+                            ← Sebelumnya
+
+                        </button>
+
+
+                        <span
+                            style="
+                                font-weight: 600;
+                                padding: 8px 14px;
+                            "
+                        >
+
+                            Halaman
+                            ${halamanJurnalUmum}
+                            dari
+                            ${totalHalaman}
+
+                        </span>
+
+
+                        <button
+                            type="button"
+                            class="btn-primary"
+                            onclick="
+                                tampilkanJurnalUmum(
+                                    dataJurnalUmumTerfilter,
+                                    ${halamanJurnalUmum + 1}
+                                )
+                            "
+                            ${
+                                halamanJurnalUmum >= totalHalaman
+                                    ? "disabled"
+                                    : ""
+                            }
+                        >
+
+                            Berikutnya →
+
+                        </button>
+
+                    </div>
+
+                </td>
+
+            </tr>
+
         `;
 
     }
 
 }
-
 
 // =====================================================
 // RESET FILTER
@@ -26364,69 +28433,810 @@ async function muatBukuBesar() {
 
 
     // ==========================================
-    // TOTAL
+    // FOOTER
     // ==========================================
 
     html += `
 
-                    </tbody>
+            </tbody>
+
+            <tfoot>
+
+                <tr>
+
+                    <td 
+                        colspan="4" 
+                        class="bb-total-label" 
+                    > 
+                        TOTAL 
+                    </td>
+
+                    <td class="bb-money"> 
+                        ${formatRupiah(totalDebit)} 
+                    </td>
+
+                    <td class="bb-money"> 
+                        ${formatRupiah(totalKredit)} 
+                    </td>
+
+                    <td class="bb-money"> 
+                        ${formatRupiah(saldo)} 
+                    </td>
+
+                </tr>
+
+            </tfoot>
+
+        </table>
+
+    </div>
 
 
-                    <tfoot>
+<!-- TOMBOL CETAK -->
+<div class="buku-besar-print-action">
 
-                        <tr>
+    <button
+        type="button"
+        class="btn-primary"
+        onclick="cetakBukuBesar()"
+    >
+        🖨️ Cetak Buku Besar
+    </button>
 
-                            <td
-                                colspan="4"
-                                class="bb-total-label"
-                            >
-                                TOTAL
-                            </td>
+</div>
 
-                            <td class="bb-money">
-                                ${formatRupiah(totalDebit)}
-                            </td>
+    <!-- FOOTER -->
+    <div class="buku-besar-footer">
 
-                            <td class="bb-money">
-                                ${formatRupiah(totalKredit)}
-                            </td>
-
-                            <td class="bb-money">
-                                ${formatRupiah(saldo)}
-                            </td>
-
-                        </tr>
-
-                    </tfoot>
-
-                </table>
-
-            </div>
-
-
-            <!-- FOOTER -->
-            <div class="buku-besar-footer">
-
-                <div>
-                    Dicetak dari Sistem Akuntansi Persediaan
-                </div>
-
-                <div>
-                    ${formatTanggal(new Date().toISOString().slice(0, 10))}
-                </div>
-
-            </div>
-
-
+        <div> 
+            Dicetak dari Sistem Akuntansi Persediaan 
         </div>
 
-    `;
+        <div> 
+            ${formatTanggal(new Date().toISOString().slice(0, 10))} 
+        </div>
+
+    </div>
+
+
+</div>
+
+`;
 
 
     container.innerHTML = html;
 
 }
 
+// =====================================================
+// CETAK BUKU BESAR
+// =====================================================
+
+function cetakBukuBesar() {
+
+    const sumber =
+        document.getElementById("tabelBukuBesar");
+
+    if (!sumber) {
+
+        alert(
+            "Buku Besar belum ditampilkan."
+        );
+
+        return;
+    }
+
+
+    // =================================================
+    // AMBIL ISI BUKU BESAR
+    // =================================================
+
+    const laporan =
+        sumber.querySelector(".buku-besar-paper");
+
+    if (!laporan) {
+
+        alert(
+            "Buku Besar belum ditampilkan."
+        );
+
+        return;
+    }
+
+
+    // =================================================
+    // SALIN ISI LAPORAN
+    // =================================================
+
+    const salinan =
+        laporan.cloneNode(true);
+
+
+    // =================================================
+    // HAPUS TOMBOL CETAK DI DALAM LAPORAN
+    // =================================================
+
+    const tombolBawah =
+        salinan.querySelector(
+            ".buku-besar-print-action"
+        );
+
+    if (tombolBawah) {
+        tombolBawah.remove();
+    }
+
+
+    // =================================================
+    // HAPUS FOOTER "DICETAK DARI..."
+    // =================================================
+
+    const footerBawah =
+        salinan.querySelector(
+            ".buku-besar-footer"
+        );
+
+    if (footerBawah) {
+        footerBawah.remove();
+    }
+
+
+    // =================================================
+    // AMBIL DATA HTML
+    // =================================================
+
+    const isiLaporan =
+        salinan.innerHTML;
+
+
+    // =================================================
+    // BUKA PREVIEW
+    // =================================================
+
+    const windowCetak =
+        window.open(
+            "",
+            "_blank",
+            "width=1100,height=800"
+        );
+
+
+    if (!windowCetak) {
+
+        alert(
+            "Preview tidak dapat dibuka. Silakan izinkan popup pada browser."
+        );
+
+        return;
+    }
+
+
+    // =================================================
+    // HTML PREVIEW
+    // =================================================
+
+    windowCetak.document.write(`
+
+<!DOCTYPE html>
+
+<html lang="id">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>
+        Buku Besar - Toko Mainan
+    </title>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        body {
+
+            margin: 0;
+
+            background: #eeeeee;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            color: #222;
+
+            font-size: 11px;
+
+        }
+
+
+        /* ==========================================
+           TOOLBAR PREVIEW
+           ========================================== */
+
+        .preview-toolbar {
+
+            position: sticky;
+
+            top: 0;
+
+            z-index: 1000;
+
+            background: white;
+
+            border-bottom:
+                1px solid #dddddd;
+
+            padding: 12px 20px;
+
+            display: flex;
+
+            justify-content: flex-end;
+
+            gap: 10px;
+
+            box-shadow:
+                0 2px 6px
+                rgba(0,0,0,0.08);
+
+        }
+
+
+        .preview-toolbar button {
+
+            border: none;
+
+            border-radius: 6px;
+
+            padding:
+                9px 18px;
+
+            font-size: 13px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+        }
+
+
+        .btn-tutup {
+
+            background: #eeeeee;
+
+            color: #333333;
+
+        }
+
+
+        .btn-cetak {
+
+            background: #222222;
+
+            color: white;
+
+        }
+
+
+        /* ==========================================
+           KERTAS LAPORAN
+           ========================================== */
+
+        .report-page {
+
+            width: 210mm;
+
+            min-height: 297mm;
+
+            margin: 25px auto;
+
+            padding: 18mm;
+
+            background: white;
+
+            box-shadow:
+                0 4px 18px
+                rgba(0,0,0,0.15);
+
+        }
+
+
+        /* ==========================================
+           HEADER PERUSAHAAN
+           ========================================== */
+
+        .report-header {
+
+            text-align: center;
+
+            border-bottom:
+                2px solid #222;
+
+            padding-bottom: 14px;
+
+            margin-bottom: 18px;
+
+        }
+
+
+        .company-name {
+
+            font-size: 21px;
+
+            font-weight: 700;
+
+            letter-spacing: 0.5px;
+
+            margin-bottom: 4px;
+
+        }
+
+
+        .company-subtitle {
+
+            font-size: 11px;
+
+            color: #555;
+
+            letter-spacing: 0.8px;
+
+            text-transform: uppercase;
+
+        }
+
+
+        .report-name {
+
+            margin-top: 16px;
+
+            font-size: 17px;
+
+            font-weight: 700;
+
+            letter-spacing: 0.5px;
+
+        }
+
+
+        .report-subtitle {
+
+            margin-top: 4px;
+
+            font-size: 11px;
+
+            color: #666;
+
+        }
+
+
+        /* ==========================================
+           INFORMASI LAPORAN
+           ========================================== */
+
+        .report-info {
+
+            display: grid;
+
+            grid-template-columns:
+                1fr 1fr;
+
+            border:
+                1px solid #cccccc;
+
+            margin-bottom: 18px;
+
+        }
+
+
+        .info-item {
+
+            padding: 8px 10px;
+
+            border-bottom:
+                1px solid #dddddd;
+
+        }
+
+
+        .info-item:nth-child(odd) {
+
+            border-right:
+                1px solid #cccccc;
+
+        }
+
+
+        .info-label {
+
+            display: block;
+
+            font-size: 9px;
+
+            color: #777;
+
+            text-transform: uppercase;
+
+            margin-bottom: 3px;
+
+        }
+
+
+        .info-value {
+
+            font-size: 11px;
+
+            font-weight: 600;
+
+        }
+
+
+        /* ==========================================
+           BERSIHKAN HEADER LAMA
+           ========================================== */
+
+        .buku-besar-company {
+
+            display: none !important;
+
+        }
+
+
+        .buku-besar-title {
+
+            display: none !important;
+
+        }
+
+
+        .buku-besar-account-info {
+
+            display: none !important;
+
+        }
+
+
+        /* ==========================================
+           TABEL
+           ========================================== */
+
+        table {
+
+            width: 100%;
+
+            border-collapse: collapse;
+
+        }
+
+
+        th {
+
+            background: #eeeeee;
+
+            border:
+                1px solid #777;
+
+            padding: 7px 6px;
+
+            text-align: center;
+
+            font-size: 10px;
+
+            font-weight: 700;
+
+        }
+
+
+        td {
+
+            border:
+                1px solid #aaaaaa;
+
+            padding: 7px 6px;
+
+            font-size: 10px;
+
+        }
+
+
+        .bb-money {
+
+            text-align: right;
+
+            white-space: nowrap;
+
+        }
+
+
+        .bb-total-label {
+
+            font-weight: 700;
+
+            text-align: right;
+
+        }
+
+
+        /* ==========================================
+           FOOTER CETAK
+           ========================================== */
+
+        .print-footer {
+
+            margin-top: 15px;
+
+            display: flex;
+
+            justify-content: space-between;
+
+            font-size: 9px;
+
+            color: #777;
+
+            border-top:
+                1px solid #dddddd;
+
+            padding-top: 7px;
+
+        }
+
+
+        /* ==========================================
+           PRINT
+           ========================================== */
+
+        @page {
+
+            size: A4 portrait;
+
+            margin: 15mm;
+
+        }
+
+
+        @media print {
+
+            body {
+
+                background: white;
+
+            }
+
+
+            .preview-toolbar {
+
+                display: none !important;
+
+            }
+
+
+            .report-page {
+
+                width: 100%;
+
+                min-height: auto;
+
+                margin: 0;
+
+                padding: 0;
+
+                box-shadow: none;
+
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- ==========================================
+         TOMBOL PREVIEW
+         ========================================== -->
+
+    <div class="preview-toolbar">
+
+        <button
+            type="button"
+            class="btn-tutup"
+            onclick="window.close()"
+        >
+            ✕ Tutup
+        </button>
+
+
+        <button
+            type="button"
+            class="btn-cetak"
+            onclick="window.print()"
+        >
+            🖨️ Cetak
+        </button>
+
+    </div>
+
+
+    <!-- ==========================================
+         LAPORAN
+         ========================================== -->
+
+    <div class="report-page">
+
+
+        <!-- HEADER BARU -->
+
+        <div class="report-header">
+
+            <div class="company-name">
+                TOKO MAINAN
+            </div>
+
+            <div class="company-subtitle">
+                Sistem Akuntansi Persediaan
+            </div>
+
+
+            <div class="report-name">
+                BUKU BESAR
+            </div>
+
+            <div class="report-subtitle">
+                Laporan Buku Besar Per Akun
+            </div>
+
+        </div>
+
+
+        <!-- INFORMASI LAPORAN -->
+
+        <div class="report-info">
+
+
+            <div class="info-item">
+
+                <span class="info-label">
+                    Periode
+                </span>
+
+                <span class="info-value">
+
+                    ${
+                        (
+                            salinan.querySelector(
+                                ".buku-besar-period"
+                            )?.textContent
+                            || "-"
+                        )
+                        .replace(
+                            "Periode:",
+                            ""
+                        )
+                        .trim()
+                    }
+
+                </span>
+
+            </div>
+
+
+            <div class="info-item">
+
+                <span class="info-label">
+                    Kode Akun
+                </span>
+
+                <span class="info-value">
+
+                    ${
+                        salinan.querySelector(
+                            ".account-info-item:nth-child(1) strong"
+                        )?.textContent
+                        || "-"
+                    }
+
+                </span>
+
+            </div>
+
+
+            <div class="info-item">
+
+                <span class="info-label">
+                    Nama Akun
+                </span>
+
+                <span class="info-value">
+
+                    ${
+                        salinan.querySelector(
+                            ".account-info-item:nth-child(2) strong"
+                        )?.textContent
+                        || "-"
+                    }
+
+                </span>
+
+            </div>
+
+
+            <div class="info-item">
+
+                <span class="info-label">
+                    Jenis Akun
+                </span>
+
+                <span class="info-value">
+
+                    ${
+                        salinan.querySelector(
+                            ".account-info-item:nth-child(3) strong"
+                        )?.textContent
+                        || "-"
+                    }
+
+                </span>
+
+            </div>
+
+
+        </div>
+
+
+        <!-- TABEL BUKU BESAR -->
+
+        ${
+            (() => {
+
+                const tabel =
+                    salinan.querySelector(
+                        ".buku-besar-table-wrap"
+                    );
+
+                return tabel
+                    ? tabel.outerHTML
+                    : "";
+
+            })()
+        }
+
+
+        <!-- FOOTER -->
+
+        <div class="print-footer">
+
+            <span>
+                Toko Mainan
+            </span>
+
+            <span>
+                Buku Besar
+            </span>
+
+        </div>
+
+
+    </div>
+
+
+</body>
+
+</html>
+
+    `);
+
+
+    windowCetak.document.close();
+
+    windowCetak.focus();
+
+}
 
 // =====================================================
 // MUAT LAPORAN LABA RUGI
